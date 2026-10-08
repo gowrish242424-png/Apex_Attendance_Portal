@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+
+{% block title %}Attendance Analytics{% endblock %}
+
+{% block content %}
+<!-- Tabbed Secondary Navigation -->
+{% include 'faculty/nav.html' %}
+
+<div class="row g-4">
+    <!-- Header Card -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <h4 class="fw-bold text-dark mb-1">
+                        <i class="bi bi-graph-up-arrow text-info me-2"></i>Faculty Attendance Analytics
+                    </h4>
+                    <p class="text-muted small mb-0">High-level institutional overview and breakdown across your assigned courses and cohorts.</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('faculty.attendance_defaulters') }}" class="btn btn-outline-danger btn-sm px-3 fw-semibold">
+                        <i class="bi bi-exclamation-triangle me-1"></i> View Defaulters
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metric Summary Cards -->
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small text-uppercase fw-semibold">Total Sessions</span>
+                    <h3 class="fw-bold text-dark mb-0 mt-1">{{ analytics.total_sessions }}</h3>
+                </div>
+                <div class="rounded-3 bg-primary-subtle text-primary p-3">
+                    <i class="bi bi-calendar2-range fs-3"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small text-uppercase fw-semibold">Present Instances</span>
+                    <h3 class="fw-bold text-success mb-0 mt-1">{{ analytics.present_count }}</h3>
+                </div>
+                <div class="rounded-3 bg-success-subtle text-success p-3">
+                    <i class="bi bi-person-check fs-3"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small text-uppercase fw-semibold">Absent Instances</span>
+                    <h3 class="fw-bold text-danger mb-0 mt-1">{{ analytics.absent_count }}</h3>
+                </div>
+                <div class="rounded-3 bg-danger-subtle text-danger p-3">
+                    <i class="bi bi-person-x fs-3"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small text-uppercase fw-semibold">Overall Turnout</span>
+                    <h3 class="fw-bold {% if analytics.overall_percentage >= 75.0 %}text-success{% else %}text-danger{% endif %} mb-0 mt-1">
+                        {{ analytics.overall_percentage }}%
+                    </h3>
+                </div>
+                <div class="rounded-3 {% if analytics.overall_percentage >= 75.0 %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %} p-3">
+                    <i class="bi bi-pie-chart fs-3"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subject-Wise Analytics Breakdown -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100 p-4 bg-white">
+            <h5 class="fw-bold text-dark mb-3"><i class="bi bi-book text-primary me-2"></i>Subject-Wise Attendance Breakdown</h5>
+            {% if analytics.subject_breakdown %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>Subject</th>
+                                <th class="text-center">Sessions</th>
+                                <th class="text-center">Turnout</th>
+                                <th style="width: 140px;">Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody class="small">
+                            {% for item in analytics.subject_breakdown %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-primary">{{ item.subject.code }}</div>
+                                        <div class="text-muted" style="font-size: 0.75rem;">{{ item.subject.name }}</div>
+                                    </td>
+                                    <td class="text-center fw-semibold">{{ item.sessions_count }}</td>
+                                    <td class="text-center">
+                                        <span class="text-success fw-bold">{{ item.present_count }}</span> / 
+                                        <span class="text-muted">{{ item.total_records }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="progress flex-grow-1" style="height: 6px;">
+                                                <div class="progress-bar {% if item.attendance_rate >= 75.0 %}bg-success{% else %}bg-danger{% endif %}" 
+                                                     role="progressbar" style="width: {{ item.attendance_rate }}%;"></div>
+                                            </div>
+                                            <span class="fw-bold small {% if item.attendance_rate >= 75.0 %}text-success{% else %}text-danger{% endif %}">
+                                                {{ item.attendance_rate }}%
+                                            </span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted small mb-0">No subject statistics available.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Class-Wise Analytics Breakdown -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100 p-4 bg-white">
+            <h5 class="fw-bold text-dark mb-3"><i class="bi bi-mortarboard text-success me-2"></i>Class-Wise Attendance Breakdown</h5>
+            {% if analytics.class_breakdown %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>Class</th>
+                                <th class="text-center">Sessions</th>
+                                <th class="text-center">Turnout</th>
+                                <th style="width: 140px;">Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody class="small">
+                            {% for item in analytics.class_breakdown %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-success">{{ item.class.name }}</div>
+                                        <div class="text-muted" style="font-size: 0.75rem;">Sem {{ item.class.semester }} &bull; {{ item.class.academic_year }}</div>
+                                    </td>
+                                    <td class="text-center fw-semibold">{{ item.sessions_count }}</td>
+                                    <td class="text-center">
+                                        <span class="text-success fw-bold">{{ item.present_count }}</span> / 
+                                        <span class="text-muted">{{ item.total_records }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="progress flex-grow-1" style="height: 6px;">
+                                                <div class="progress-bar {% if item.attendance_rate >= 75.0 %}bg-success{% else %}bg-danger{% endif %}" 
+                                                     role="progressbar" style="width: {{ item.attendance_rate }}%;"></div>
+                                            </div>
+                                            <span class="fw-bold small {% if item.attendance_rate >= 75.0 %}text-success{% else %}text-danger{% endif %}">
+                                                {{ item.attendance_rate }}%
+                                            </span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted small mb-0">No class statistics available.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+
+{% block title %}Global Student Attendance Audit{% endblock %}
+
+{% block content %}
+<!-- Admin Governance Sub-Navigation -->
+{% set active_page = 'student_reports' %}
+{% include 'admin/nav.html' %}
+
+<div class="row g-4">
+    <!-- Header Card -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <h4 class="fw-bold text-dark mb-1">
+                        <i class="bi bi-people text-primary me-2"></i>Global Student Attendance Audit
+                    </h4>
+                    <p class="text-muted small mb-0">
+                        Individual student attendance records across departments, classes, and specific subject enrollments.
+                    </p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill small">
+                        Institutional Minimum: {{ threshold }}%
+                    </span>
+                    <a href="{{ url_for('admin.export_student_reports_csv', search=search or '', department_id=selected_dept or '', class_id=selected_class or '', subject_id=selected_subject or '') }}" 
+                       class="btn btn-outline-success btn-sm rounded-pill px-3 fw-semibold shadow-sm">
+                        <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export CSV
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <form method="GET" action="{{ url_for('admin.student_reports') }}" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted">Search Student</label>
+                    <input type="text" class="form-control form-control-sm" name="search" value="{{ search }}" placeholder="Roll #, Name, Email...">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted">Department</label>
+                    <select class="form-select form-select-sm" name="department_id">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                            <option value="{{ dept.id }}" {% if selected_dept == dept.id %}selected{% endif %}>
+                                {{ dept.code }} - {{ dept.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted">Class</label>
+                    <select class="form-select form-select-sm" name="class_id">
+                        <option value="">All Classes</option>
+                        {% for cls in classes %}
+                            <option value="{{ cls.id }}" {% if selected_class == cls.id %}selected{% endif %}>
+                                {{ cls.name }} (Sem {{ cls.semester }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted">Specific Subject (Optional)</label>
+                    <select class="form-select form-select-sm" name="subject_id">
+                        <option value="">All Curriculum Subjects</option>
+                        {% for sub in subjects %}
+                            <option value="{{ sub.id }}" {% if selected_subject == sub.id %}selected{% endif %}>
+                                {{ sub.code }} - {{ sub.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-12 d-flex justify-content-end gap-2">
+                    <a href="{{ url_for('admin.student_reports') }}" class="btn btn-outline-secondary btn-sm px-3" title="Reset Filters">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                    </a>
+                    <button type="submit" class="btn btn-primary btn-sm px-4 fw-semibold">
+                        <i class="bi bi-funnel me-1"></i>Filter Students
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Student Audit Table -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-person-badge text-primary me-2"></i>Student Records Roster ({{ report_data|length }})
+                </h5>
+            </div>
+            {% if report_data %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small text-uppercase">
+                            <tr>
+                                <th>Roll Number</th>
+                                <th>Student Name</th>
+                                <th>Department</th>
+                                <th>Class</th>
+                                <th>Context Scope</th>
+                                <th class="text-center">Attended</th>
+                                <th class="text-center">Absent</th>
+                                <th class="text-center">Total</th>
+                                <th style="width: 200px;">Turnout %</th>
+                                <th class="text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in report_data %}
+                                <tr>
+                                    <td class="fw-bold font-monospace text-primary">{{ item.student.roll_number }}</td>
+                                    <td>
+                                        <div class="fw-semibold text-dark">{{ item.student.full_name }}</div>
+                                        <div class="text-muted small">{{ item.student.user.email if item.student.user else '' }}</div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-secondary border">
+                                            {{ item.student.department.code if item.student.department else 'N/A' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-secondary border">
+                                            {{ item.student.enrolled_class.name if item.student.enrolled_class else 'N/A' }}
+                                        </span>
+                                    </td>
+                                    <td class="small text-muted">{{ item.subject_label }}</td>
+                                    <td class="text-center text-success fw-bold">{{ item.present }}</td>
+                                    <td class="text-center text-danger fw-bold">{{ item.absent }}</td>
+                                    <td class="text-center fw-semibold text-secondary">{{ item.total }}</td>
+                                    <td>
+                                        <div class="d-flex justify-content-between align-items-center small mb-1">
+                                            <span class="fw-bold {% if item.percentage >= threshold %}text-success{% else %}text-danger{% endif %}">
+                                                {{ item.percentage }}%
+                                            </span>
+                                            <span class="text-muted small">Min: {{ threshold }}%</span>
+                                        </div>
+                                        <div class="progress rounded-pill" style="height: 5px;">
+                                            <div class="progress-bar {% if item.percentage >= threshold %}bg-success{% else %}bg-danger{% endif %}" 
+                                                 role="progressbar" style="width: {{ item.percentage }}%;"></div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if item.total == 0 %}
+                                            <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2">Not Started</span>
+                                        {% elif item.percentage >= threshold %}
+                                            <span class="badge bg-success-subtle text-success rounded-pill px-2">Compliant</span>
+                                        {% else %}
+                                            <span class="badge bg-danger-subtle text-danger rounded-pill px-2">Shortage</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
+                    No student attendance records matched the filter criteria.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

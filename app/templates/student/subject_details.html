@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ details.subject.code }} Attendance Details{% endblock %}
+
+{% block content %}
+<!-- Tabbed Secondary Navigation -->
+{% include 'student/nav.html' %}
+
+<div class="row g-4">
+    <!-- Header Card -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="badge bg-primary px-3 py-1 rounded-pill">{{ details.subject.code }}</span>
+                        <h4 class="fw-bold text-dark mb-0">{{ details.subject.name }}</h4>
+                    </div>
+                    <p class="text-muted small mb-0">
+                        Class: <strong>{{ profile.enrolled_class.name }}</strong> &bull; 
+                        Credits: <strong>{{ details.subject.credits }}</strong> &bull; 
+                        Department: <strong>{{ profile.department.name }}</strong>
+                    </p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('student.what_if', subject_id=details.subject.id) }}" class="btn btn-warning btn-sm px-3 fw-bold text-dark shadow-sm">
+                        <i class="bi bi-calculator me-1"></i> What-If Simulation
+                    </a>
+                    <a href="{{ url_for('student.subject_attendance') }}" class="btn btn-outline-secondary btn-sm px-3 fw-semibold">
+                        <i class="bi bi-arrow-left me-1"></i> Back to Subjects
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Metrics -->
+    <div class="col-md-3 col-6">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+            <span class="text-muted small text-uppercase fw-semibold">Course Attendance</span>
+            <h3 class="fw-bold {% if details.percentage is not none and details.percentage >= details.threshold %}text-success{% elif details.percentage is not none %}text-danger{% else %}text-muted{% endif %} mb-0 mt-1">
+                {{ details.percentage if details.percentage is not none else '0.0' }}%
+            </h3>
+            <span class="small text-muted">Cutoff: {{ details.threshold }}%</span>
+        </div>
+    </div>
+
+    <div class="col-md-3 col-6">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+            <span class="text-muted small text-uppercase fw-semibold">Total Classes</span>
+            <h3 class="fw-bold text-dark mb-0 mt-1">{{ details.total }}</h3>
+            <span class="small text-muted">Conducted so far</span>
+        </div>
+    </div>
+
+    <div class="col-md-3 col-6">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+            <span class="text-muted small text-uppercase fw-semibold">Classes Attended</span>
+            <h3 class="fw-bold text-success mb-0 mt-1">{{ details.attended }}</h3>
+            <span class="small text-muted">Marked Present</span>
+        </div>
+    </div>
+
+    <div class="col-md-3 col-6">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+            <span class="text-muted small text-uppercase fw-semibold">Classes Missed</span>
+            <h3 class="fw-bold text-danger mb-0 mt-1">{{ details.absent }}</h3>
+            <span class="small text-muted">Marked Absent</span>
+        </div>
+    </div>
+
+    <!-- Shortage Alert (if applicable) -->
+    {% if details.is_shortage %}
+    <div class="col-12">
+        <div class="alert alert-danger border-0 shadow-sm rounded-4 p-3 d-flex align-items-center justify-content-between mb-0">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-exclamation-octagon-fill text-danger fs-4"></i>
+                <div>
+                    <strong>Attendance Shortage Warning:</strong> Current attendance ({{ details.percentage }}%) is below the {{ details.threshold }}% requirement by <strong>{{ details.shortage }}%</strong>.
+                </div>
+            </div>
+            <a href="{{ url_for('student.what_if', subject_id=details.subject.id) }}" class="btn btn-danger btn-sm fw-semibold">
+                Calculate Recovery
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Session-by-Session Roll Call Log -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-dark mb-0">Session-by-Session Roll Call Log ({{ details.records|length }})</h5>
+            </div>
+
+            {% if details.records %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th style="width: 50px;">#</th>
+                                <th>Date</th>
+                                <th>Period / Slot</th>
+                                <th>Instructor</th>
+                                <th class="text-center" style="width: 140px;">Status</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody class="small">
+                            {% for rec in details.records %}
+                                <tr>
+                                    <td class="text-muted">{{ loop.index }}</td>
+                                    <td class="fw-bold text-dark">{{ rec.session.session_date.strftime('%d %b %Y') }}</td>
+                                    <td><span class="badge bg-light text-dark border">{{ rec.session.session_slot }}</span></td>
+                                    <td>{{ rec.session.faculty.full_name if rec.session.faculty else 'Department Staff' }}</td>
+                                    <td class="text-center">
+                                        <span class="badge {% if rec.status == 'PRESENT' %}bg-success{% else %}bg-danger{% endif %} px-3 py-1 fw-bold">
+                                            {{ rec.status }}
+                                        </span>
+                                    </td>
+                                    <td class="text-muted">{{ rec.remarks or '-' }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-calendar-x text-muted fs-1 mb-2"></i>
+                    <h6 class="fw-bold text-dark">No Sessions Recorded</h6>
+                    <p class="text-muted small mb-0">No attendance sessions have been logged for this course yet.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

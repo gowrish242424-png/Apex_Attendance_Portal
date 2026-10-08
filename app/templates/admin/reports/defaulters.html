@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+
+{% block title %}Institutional Attendance Defaulters Report{% endblock %}
+
+{% block content %}
+<!-- Admin Governance Sub-Navigation -->
+{% set active_page = 'defaulter_reports' %}
+{% include 'admin/nav.html' %}
+
+<div class="row g-4">
+    <!-- Header Card -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white border-start border-danger border-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <h4 class="fw-bold text-dark mb-1">
+                        <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Institutional Defaulters Report
+                    </h4>
+                    <p class="text-muted small mb-0">
+                        Official shortage register identifying all students with attendance below the mandatory minimum threshold ({{ threshold }}%).
+                    </p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 rounded-pill small fw-semibold">
+                        {{ defaulters|length }} Shortage Incident{% if defaulters|length != 1 %}s{% endif %}
+                    </span>
+                    <a href="{{ url_for('admin.export_defaulter_reports_csv', department_id=selected_dept or '', class_id=selected_class or '', subject_id=selected_subject or '', threshold=threshold or '') }}" 
+                       class="btn btn-danger btn-sm rounded-pill px-3 fw-semibold shadow-sm">
+                        <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export Defaulters CSV
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Card with Custom Threshold -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <form method="GET" action="{{ url_for('admin.defaulter_reports') }}" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted">Department</label>
+                    <select class="form-select form-select-sm" name="department_id">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                            <option value="{{ dept.id }}" {% if selected_dept == dept.id %}selected{% endif %}>
+                                {{ dept.code }} - {{ dept.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted">Class</label>
+                    <select class="form-select form-select-sm" name="class_id">
+                        <option value="">All Classes</option>
+                        {% for cls in classes %}
+                            <option value="{{ cls.id }}" {% if selected_class == cls.id %}selected{% endif %}>
+                                {{ cls.name }} (Sem {{ cls.semester }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted">Subject</label>
+                    <select class="form-select form-select-sm" name="subject_id">
+                        <option value="">All Subjects</option>
+                        {% for sub in subjects %}
+                            <option value="{{ sub.id }}" {% if selected_subject == sub.id %}selected{% endif %}>
+                                {{ sub.code }} - {{ sub.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted">Custom Cutoff % (Default: {{ threshold }}%)</label>
+                    <input type="number" step="0.1" min="1" max="100" class="form-control form-control-sm" name="threshold" value="{{ threshold }}">
+                </div>
+
+                <div class="col-12 d-flex justify-content-end gap-2">
+                    <a href="{{ url_for('admin.defaulter_reports') }}" class="btn btn-outline-secondary btn-sm px-3" title="Reset Filters">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                    </a>
+                    <button type="submit" class="btn btn-danger btn-sm px-4 fw-semibold">
+                        <i class="bi bi-funnel me-1"></i>Filter Defaulters
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Defaulters Table -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-clipboard-x text-danger me-2"></i>Attendance Shortage Register ({{ defaulters|length }})
+                </h5>
+            </div>
+            {% if defaulters %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small text-uppercase">
+                            <tr>
+                                <th>Roll Number</th>
+                                <th>Student Name</th>
+                                <th>Department</th>
+                                <th>Class</th>
+                                <th>Subject</th>
+                                <th class="text-center">Attended / Total</th>
+                                <th style="width: 180px;">Turnout %</th>
+                                <th class="text-center">Cutoff %</th>
+                                <th class="text-center">Shortage %</th>
+                                <th class="text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in defaulters %}
+                                <tr>
+                                    <td class="fw-bold font-monospace text-danger">{{ item.student.roll_number }}</td>
+                                    <td>
+                                        <div class="fw-semibold text-dark">{{ item.student.full_name }}</div>
+                                        <div class="text-muted small">{{ item.student.user.email if item.student.user else '' }}</div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-secondary border">
+                                            {{ item.student.department.code if item.student.department else 'N/A' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-secondary border">
+                                            {{ item.class.name if item.class else 'N/A' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold text-dark">{{ item.subject.code }}</div>
+                                        <div class="text-muted small">{{ item.subject.name }}</div>
+                                    </td>
+                                    <td class="text-center small">
+                                        <span class="text-danger fw-bold">{{ item.attended }}</span> / 
+                                        <span class="text-secondary fw-semibold">{{ item.total }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex justify-content-between align-items-center small mb-1">
+                                            <span class="fw-bold text-danger">{{ item.percentage }}%</span>
+                                        </div>
+                                        <div class="progress rounded-pill" style="height: 5px;">
+                                            <div class="progress-bar bg-danger" role="progressbar" style="width: {{ item.percentage }}%;"></div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center fw-semibold text-secondary">{{ item.threshold }}%</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-danger text-white rounded-pill px-2">
+                                            -{{ item.shortage }}%
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-danger-subtle text-danger rounded-pill px-2">Defaulter</span>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-shield-check text-success fs-1 d-block mb-2"></i>
+                    <h5 class="fw-bold text-success mb-1">Zero Defaulters Detected!</h5>
+                    <p class="small text-muted mb-0">All enrolled students meet or exceed the {{ threshold }}% attendance cutoff for the selected scope.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,363 @@
+{% extends 'base.html' %}
+
+{% block title %}Institutional Analytics & Intelligence{% endblock %}
+
+{% block content %}
+<!-- Admin Governance Sub-Navigation -->
+{% set active_page = 'analytics' %}
+{% include 'admin/nav.html' %}
+
+<div class="row g-4">
+    <!-- Header Title & Quick Export Banner -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <h4 class="fw-bold text-dark mb-1">
+                        <i class="bi bi-graph-up-arrow text-primary me-2"></i>Institutional Attendance Analytics
+                    </h4>
+                    <p class="text-muted small mb-0">
+                        Macro-level institutional attendance statistics, daily activity trends, and department-level distribution.
+                    </p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill small fw-semibold">
+                        <i class="bi bi-shield-check me-1"></i>Min Cutoff: {{ analytics.threshold }}%
+                    </span>
+                    <a href="{{ url_for('admin.defaulter_reports') }}" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-semibold">
+                        <i class="bi bi-exclamation-triangle me-1"></i>View Defaulters ({{ analytics.defaulter_students_count }})
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Metric Cards -->
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small text-uppercase fw-semibold">Overall Turnout</span>
+                <span class="badge {% if analytics.overall_percentage >= analytics.threshold %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %} rounded-pill px-2 py-1">
+                    {{ analytics.overall_percentage }}%
+                </span>
+            </div>
+            <h3 class="fw-bold mb-2 text-dark">{{ analytics.overall_percentage }}%</h3>
+            <div class="progress rounded-pill mb-2" style="height: 6px;">
+                <div class="progress-bar {% if analytics.overall_percentage >= analytics.threshold %}bg-success{% else %}bg-danger{% endif %}" 
+                     role="progressbar" style="width: {{ analytics.overall_percentage }}%;"></div>
+            </div>
+            <span class="text-muted small">Target Minimum: {{ analytics.threshold }}%</span>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small text-uppercase fw-semibold">Total Sessions</span>
+                <i class="bi bi-calendar2-check text-primary fs-5"></i>
+            </div>
+            <h3 class="fw-bold mb-1 text-dark">{{ analytics.total_sessions }}</h3>
+            <span class="text-muted small">Recorded across {{ analytics.total_classes }} classes</span>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small text-uppercase fw-semibold">Total Roll Calls</span>
+                <i class="bi bi-check2-all text-info fs-5"></i>
+            </div>
+            <h3 class="fw-bold mb-1 text-dark">{{ analytics.total_records }}</h3>
+            <div class="d-flex gap-2 small text-muted">
+                <span class="text-success"><i class="bi bi-check-circle me-1"></i>{{ analytics.present_count }} P</span>
+                <span class="text-danger"><i class="bi bi-x-circle me-1"></i>{{ analytics.absent_count }} A</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small text-uppercase fw-semibold">Student Compliance</span>
+                <i class="bi bi-people text-warning fs-5"></i>
+            </div>
+            <h3 class="fw-bold mb-1 text-dark">{{ analytics.eligible_students_count }} / {{ analytics.total_students }}</h3>
+            <span class="text-muted small">
+                <span class="text-success fw-semibold">{{ analytics.eligible_students_count }} Compliant</span> | 
+                <span class="text-danger fw-semibold">{{ analytics.defaulter_students_count }} Shortage</span>
+            </span>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-bezier2 text-primary me-2"></i>Daily Attendance Turnout Trend
+                </h5>
+                <span class="text-muted small">Chronological Turnout (%)</span>
+            </div>
+            <div style="position: relative; height: 280px;">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-pie-chart text-info me-2"></i>Turnout Ratio
+                </h5>
+                <span class="text-muted small">Marks Distribution</span>
+            </div>
+            <div style="position: relative; height: 230px;">
+                <canvas id="ratioChart"></canvas>
+            </div>
+            <div class="row text-center mt-3 pt-2 border-top g-2 small">
+                <div class="col-6">
+                    <span class="text-muted">Present Marks</span>
+                    <h6 class="fw-bold text-success mb-0">{{ analytics.present_count }}</h6>
+                </div>
+                <div class="col-6">
+                    <span class="text-muted">Absent Marks</span>
+                    <h6 class="fw-bold text-danger mb-0">{{ analytics.absent_count }}</h6>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Department-Wise Attendance Performance -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-building text-primary me-2"></i>Department Performance Breakdown
+                </h5>
+                <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-2 small">
+                    {{ analytics.department_breakdown|length }} Departments
+                </span>
+            </div>
+            {% if analytics.department_breakdown %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small text-uppercase">
+                            <tr>
+                                <th>Department</th>
+                                <th class="text-center">Enrolled Students</th>
+                                <th class="text-center">Sessions</th>
+                                <th class="text-center">Present / Absent</th>
+                                <th style="width: 250px;">Turnout Rate</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for dept_item in analytics.department_breakdown %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-dark">{{ dept_item.department.name }}</div>
+                                        <span class="badge bg-light text-secondary border small">{{ dept_item.department.code }}</span>
+                                    </td>
+                                    <td class="text-center fw-semibold text-secondary">{{ dept_item.students_count }}</td>
+                                    <td class="text-center fw-semibold text-secondary">{{ dept_item.sessions_count }}</td>
+                                    <td class="text-center small">
+                                        <span class="text-success fw-bold">{{ dept_item.present_count }}</span> / 
+                                        <span class="text-danger fw-bold">{{ dept_item.absent_count }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex justify-content-between align-items-center small mb-1">
+                                            <span class="fw-bold {% if dept_item.percentage >= analytics.threshold %}text-success{% else %}text-danger{% endif %}">
+                                                {{ dept_item.percentage }}%
+                                            </span>
+                                            <span class="text-muted small">Cutoff: {{ analytics.threshold }}%</span>
+                                        </div>
+                                        <div class="progress rounded-pill" style="height: 6px;">
+                                            <div class="progress-bar {% if dept_item.percentage >= analytics.threshold %}bg-success{% else %}bg-danger{% endif %}" 
+                                                 role="progressbar" style="width: {{ dept_item.percentage }}%;"></div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="{{ url_for('admin.class_reports', department_id=dept_item.department.id) }}" 
+                                           class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1">
+                                            <i class="bi bi-mortarboard me-1"></i>View Classes
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
+                    No department data available.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Class-Wise Performance Table -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-mortarboard text-success me-2"></i>Class-Wise Performance Overview
+                </h5>
+                <a href="{{ url_for('admin.class_reports') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                    <i class="bi bi-file-earmark-spreadsheet me-1"></i>Detailed Class Reports
+                </a>
+            </div>
+            {% if analytics.class_breakdown %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small text-uppercase">
+                            <tr>
+                                <th>Class Name</th>
+                                <th>Department</th>
+                                <th class="text-center">Semester</th>
+                                <th class="text-center">Students</th>
+                                <th class="text-center">Sessions</th>
+                                <th style="width: 200px;">Attendance %</th>
+                                <th class="text-center">Status</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c_item in analytics.class_breakdown %}
+                                <tr>
+                                    <td class="fw-bold text-dark">{{ c_item.class.name }}</td>
+                                    <td>
+                                        <span class="badge bg-light text-secondary border">
+                                            {{ c_item.class.department.code if c_item.class.department else 'N/A' }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">{{ c_item.class.semester }}</td>
+                                    <td class="text-center fw-semibold text-secondary">{{ c_item.students_count }}</td>
+                                    <td class="text-center fw-semibold text-secondary">{{ c_item.sessions_count }}</td>
+                                    <td>
+                                        <div class="d-flex justify-content-between align-items-center small mb-1">
+                                            <span class="fw-bold {% if c_item.percentage >= analytics.threshold %}text-success{% else %}text-danger{% endif %}">
+                                                {{ c_item.percentage }}%
+                                            </span>
+                                        </div>
+                                        <div class="progress rounded-pill" style="height: 5px;">
+                                            <div class="progress-bar {% if c_item.percentage >= analytics.threshold %}bg-success{% else %}bg-danger{% endif %}" 
+                                                 role="progressbar" style="width: {{ c_item.percentage }}%;"></div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if c_item.sessions_count == 0 %}
+                                            <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2">No Sessions</span>
+                                        {% elif c_item.percentage >= analytics.threshold %}
+                                            <span class="badge bg-success-subtle text-success rounded-pill px-2">Compliant</span>
+                                        {% else %}
+                                            <span class="badge bg-danger-subtle text-danger rounded-pill px-2">Shortage</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="{{ url_for('admin.class_reports', class_id=c_item.class.id) }}" 
+                                           class="btn btn-sm btn-outline-secondary rounded-pill px-2 py-1" title="View class roster">
+                                            <i class="bi bi-eye"></i> Details
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
+                    No classes registered.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Trend Line Chart
+    const trendCtx = document.getElementById('trendChart');
+    if (trendCtx) {
+        const labels = {{ analytics.trend_data.labels | tojson }};
+        const rates = {{ analytics.trend_data.rates | tojson }};
+        
+        new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: labels.length > 0 ? labels : ['No Data'],
+                datasets: [{
+                    label: 'Turnout Rate (%)',
+                    data: rates.length > 0 ? rates : [0],
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.08)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) { return value + '%'; }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) { return 'Turnout: ' + ctx.raw + '%'; }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Ratio Doughnut Chart
+    const ratioCtx = document.getElementById('ratioChart');
+    if (ratioCtx) {
+        const presentCount = {{ analytics.present_count }};
+        const absentCount = {{ analytics.absent_count }};
+        const total = presentCount + absentCount;
+
+        new Chart(ratioCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Present', 'Absent'],
+                datasets: [{
+                    data: total > 0 ? [presentCount, absentCount] : [1, 0],
+                    backgroundColor: ['#198754', '#dc3545'],
+                    borderWidth: 2,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { boxWidth: 12, font: { size: 11 } }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

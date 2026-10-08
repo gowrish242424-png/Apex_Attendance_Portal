@@ -1,0 +1,67 @@
+<!-- Reusable Admin Governance Sub-Navigation Bar -->
+<div class="card border-0 shadow-sm rounded-4 mb-4 bg-white p-2">
+    <ul class="nav nav-pills nav-fill flex-column flex-md-row gap-1 small fw-semibold">
+        <li class="nav-item">
+            <a class="nav-link text-start text-md-center {% if active_page == 'dashboard' %}active bg-primary text-white{% else %}text-secondary{% endif %}"
+               href="{{ url_for('admin.dashboard') }}">
+                <i class="bi bi-speedometer2 me-1"></i> Dashboard
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-start text-md-center {% if active_page == 'departments' %}active bg-primary text-white{% else %}text-secondary{% endif %}"
+               href="{{ url_for('admin.departments') }}">
+                <i class="bi bi-building me-1"></i> Departments
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-start text-md-center {% if active_page == 'classes' %}active bg-primary text-white{% else %}text-secondary{% endif %}"
+               href="{{ url_for('admin.classes') }}">
+                <i class="bi bi-mortarboard me-1"></i> Classes
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-start text-md-center {% if active_page == 'subjects' %}active bg-primary text-white{% else %}text-secondary{% endif %}"
+               href="{{ url_for('admin.subjects') }}">
+                <i class="bi bi-book me-1"></i> Subjects
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-start text-md-center {% if active_page == 'faculty' %}active bg-primary text-white{% else %}text-secondary{% endif %}"
+               href="{{ url_for('admin.faculty') }}">
+                <i class="bi bi-person-workspace me-1"></i> Faculty
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-start text-md-center {% if active_page == 'students' %}active bg-primary text-white{% else %}text-secondary{% endif %}"
+               href="{{ url_for('admin.students') }}">
+                <i class="bi bi-people me-1"></i> Students
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-start text-md-center {% if active_page == 'allocations' %}active bg-primary text-white{% else %}text-secondary{% endif %}"
+               href="{{ url_for('admin.allocations') }}">
+                <i class="bi bi-diagram-3 me-1"></i> Allocations
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-start text-md-center {% if active_page == 'analytics' %}active bg-primary text-white{% else %}text-secondary{% endif %}"
+               href="{{ url_for('admin.analytics') }}">
+                <i class="bi bi-graph-up-arrow me-1"></i> Analytics
+            </a>
+        </li>
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle text-start text-md-center {% if active_page in ['class_reports', 'subject_reports', 'faculty_reports', 'student_reports', 'defaulter_reports'] %}active bg-primary text-white{% else %}text-secondary{% endif %}"
+               href="#" role="button" data-bs-toggle="dropdown">
+                <i class="bi bi-file-earmark-text me-1"></i> Reports
+            </a>
+            <ul class="dropdown-menu shadow-sm border-0 rounded-3">
+                <li><a class="dropdown-item small" href="{{ url_for('admin.class_reports') }}"><i class="bi bi-mortarboard me-2 text-success"></i>Class Reports</a></li>
+                <li><a class="dropdown-item small" href="{{ url_for('admin.subject_reports') }}"><i class="bi bi-book me-2 text-info"></i>Subject Reports</a></li>
+                <li><a class="dropdown-item small" href="{{ url_for('admin.faculty_reports') }}"><i class="bi bi-person-workspace me-2 text-warning"></i>Faculty Activity</a></li>
+                <li><a class="dropdown-item small" href="{{ url_for('admin.student_reports') }}"><i class="bi bi-people me-2 text-primary"></i>Student Audit</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item small text-danger" href="{{ url_for('admin.defaulter_reports') }}"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>Defaulters Report</a></li>
+            </ul>
+        </li>
+    </ul>
+</div>

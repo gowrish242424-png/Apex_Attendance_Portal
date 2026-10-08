@@ -1,0 +1,266 @@
+{% extends 'base.html' %}
+
+{% block title %}Faculty Reports & CSV Export{% endblock %}
+
+{% block content %}
+<!-- Faculty Secondary Navigation -->
+{% include 'faculty/nav.html' %}
+
+<div class="row g-4">
+    <!-- Header Card -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <h4 class="fw-bold text-dark mb-1">
+                        <i class="bi bi-file-earmark-spreadsheet text-success me-2"></i>Faculty Attendance Reports & Export
+                    </h4>
+                    <p class="text-muted small mb-0">
+                        Attendance analytics, course performance summaries, and defaulter registers strictly scoped to your assigned curriculum courses.
+                    </p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{{ url_for('faculty.export_attendance_csv', date_from=date_from or '', date_to=date_to or '') }}" 
+                       class="btn btn-outline-success btn-sm rounded-pill px-3 fw-semibold shadow-sm">
+                        <i class="bi bi-file-earmark-arrow-down me-1"></i>Export Courses CSV
+                    </a>
+                    <a href="{{ url_for('faculty.export_defaulters_csv') }}" 
+                       class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-semibold shadow-sm">
+                        <i class="bi bi-file-earmark-x me-1"></i>Export Defaulters CSV
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Filter Card -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <form method="GET" action="{{ url_for('faculty.reports') }}" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold text-muted">Session Date From</label>
+                    <input type="date" class="form-control form-control-sm" name="date_from" value="{{ date_from }}">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold text-muted">Session Date To</label>
+                    <input type="date" class="form-control form-control-sm" name="date_to" value="{{ date_to }}">
+                </div>
+
+                <div class="col-md-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-success btn-sm flex-grow-1 fw-semibold">
+                        <i class="bi bi-funnel me-1"></i>Filter Sessions
+                    </button>
+                    <a href="{{ url_for('faculty.reports') }}" class="btn btn-outline-secondary btn-sm" title="Reset Filters">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- KPI Metric Cards -->
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small text-uppercase fw-semibold">Turnout Rate</span>
+                <span class="badge {% if data.overall_percentage >= data.threshold %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %} rounded-pill px-2">
+                    {{ data.overall_percentage }}%
+                </span>
+            </div>
+            <h3 class="fw-bold mb-2 text-dark">{{ data.overall_percentage }}%</h3>
+            <div class="progress rounded-pill mb-2" style="height: 6px;">
+                <div class="progress-bar {% if data.overall_percentage >= data.threshold %}bg-success{% else %}bg-danger{% endif %}" 
+                     role="progressbar" style="width: {{ data.overall_percentage }}%;"></div>
+            </div>
+            <span class="text-muted small">Cutoff Minimum: {{ data.threshold }}%</span>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small text-uppercase fw-semibold">Lectures Held</span>
+                <i class="bi bi-calendar2-check text-success fs-5"></i>
+            </div>
+            <h3 class="fw-bold mb-1 text-dark">{{ data.total_sessions }}</h3>
+            <span class="text-muted small">Total instructional sessions</span>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small text-uppercase fw-semibold">Evaluations</span>
+                <i class="bi bi-check2-all text-info fs-5"></i>
+            </div>
+            <h3 class="fw-bold mb-1 text-dark">{{ data.total_records }}</h3>
+            <div class="d-flex gap-2 small text-muted">
+                <span class="text-success"><i class="bi bi-check-circle me-1"></i>{{ data.present_count }} Present</span>
+                <span class="text-danger"><i class="bi bi-x-circle me-1"></i>{{ data.absent_count }} Absent</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small text-uppercase fw-semibold">Defaulters</span>
+                <i class="bi bi-exclamation-triangle text-danger fs-5"></i>
+            </div>
+            <h3 class="fw-bold mb-1 text-danger">{{ data.defaulters|length }}</h3>
+            <span class="text-muted small">Students below {{ data.threshold }}% cutoff</span>
+        </div>
+    </div>
+
+    <!-- Assigned Courses Performance Table -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-mortarboard text-success me-2"></i>Assigned Course Performance Breakdown
+                </h5>
+                <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-2 small">
+                    {{ data.subject_breakdown|length }} Assigned Courses
+                </span>
+            </div>
+            {% if data.subject_breakdown %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small text-uppercase">
+                            <tr>
+                                <th>Class</th>
+                                <th>Subject Code</th>
+                                <th>Subject Name</th>
+                                <th class="text-center">Sessions</th>
+                                <th class="text-center">Present Marks</th>
+                                <th class="text-center">Absent Marks</th>
+                                <th style="width: 220px;">Turnout Rate</th>
+                                <th class="text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in data.subject_breakdown %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-light text-secondary border fw-bold">{{ row.class.name }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-primary border font-monospace">{{ row.subject.code }}</span>
+                                    </td>
+                                    <td class="fw-semibold text-dark">{{ row.subject.name }}</td>
+                                    <td class="text-center fw-bold text-dark">{{ row.sessions_count }}</td>
+                                    <td class="text-center text-success fw-bold">{{ row.present_count }}</td>
+                                    <td class="text-center text-danger fw-bold">{{ row.absent_count }}</td>
+                                    <td>
+                                        <div class="d-flex justify-content-between align-items-center small mb-1">
+                                            <span class="fw-bold {% if row.percentage >= data.threshold %}text-success{% else %}text-danger{% endif %}">
+                                                {{ row.percentage }}%
+                                            </span>
+                                            <span class="text-muted small">Min: {{ data.threshold }}%</span>
+                                        </div>
+                                        <div class="progress rounded-pill" style="height: 5px;">
+                                            <div class="progress-bar {% if row.percentage >= data.threshold %}bg-success{% else %}bg-danger{% endif %}" 
+                                                 role="progressbar" style="width: {{ row.percentage }}%;"></div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if row.sessions_count == 0 %}
+                                            <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2">No Sessions</span>
+                                        {% elif row.percentage >= data.threshold %}
+                                            <span class="badge bg-success-subtle text-success rounded-pill px-2">Good</span>
+                                        {% else %}
+                                            <span class="badge bg-danger-subtle text-danger rounded-pill px-2">Shortage</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
+                    No course assignments found for your faculty account.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Course Defaulters Roster -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-exclamation-octagon text-danger me-2"></i>Course Defaulters Register ({{ data.defaulters|length }})
+                </h5>
+                {% if data.defaulters %}
+                    <a href="{{ url_for('faculty.export_defaulters_csv') }}" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                        <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export Defaulters CSV
+                    </a>
+                {% endif %}
+            </div>
+            {% if data.defaulters %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small text-uppercase">
+                            <tr>
+                                <th>Roll Number</th>
+                                <th>Student Name</th>
+                                <th>Class</th>
+                                <th>Subject</th>
+                                <th class="text-center">Attended / Total</th>
+                                <th style="width: 180px;">Turnout %</th>
+                                <th class="text-center">Cutoff %</th>
+                                <th class="text-center">Deficit %</th>
+                                <th class="text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for d in data.defaulters %}
+                                <tr>
+                                    <td class="fw-bold font-monospace text-danger">{{ d.student.roll_number }}</td>
+                                    <td class="fw-semibold text-dark">{{ d.student.full_name }}</td>
+                                    <td>
+                                        <span class="badge bg-light text-secondary border">{{ d.class.name }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-primary border font-monospace">{{ d.subject.code }}</span>
+                                    </td>
+                                    <td class="text-center small">
+                                        <span class="text-danger fw-bold">{{ d.attended }}</span> / 
+                                        <span class="text-secondary fw-semibold">{{ d.total }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex justify-content-between align-items-center small mb-1">
+                                            <span class="fw-bold text-danger">{{ d.percentage }}%</span>
+                                        </div>
+                                        <div class="progress rounded-pill" style="height: 5px;">
+                                            <div class="progress-bar bg-danger" role="progressbar" style="width: {{ d.percentage }}%;"></div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center fw-semibold text-secondary">{{ d.threshold }}%</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-danger text-white rounded-pill px-2">
+                                            -{{ d.shortage }}%
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-danger-subtle text-danger rounded-pill px-2">Defaulter</span>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-shield-check text-success fs-1 d-block mb-2"></i>
+                    <h6 class="fw-bold text-success mb-1">No Attendance Defaulters!</h6>
+                    <p class="small text-muted mb-0">All students enrolled in your courses currently maintain attendance above the {{ data.threshold }}% cutoff.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

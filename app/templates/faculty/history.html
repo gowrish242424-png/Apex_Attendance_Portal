@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+
+{% block title %}Attendance History{% endblock %}
+
+{% block content %}
+<!-- Tabbed Secondary Navigation -->
+{% include 'faculty/nav.html' %}
+
+<div class="row g-4">
+    <!-- Header Card -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <h4 class="fw-bold text-dark mb-1">
+                        <i class="bi bi-clock-history text-primary me-2"></i>Attendance History
+                    </h4>
+                    <p class="text-muted small mb-0">Review, filter, and audit past attendance sessions conducted by you.</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('faculty.mark_attendance') }}" class="btn btn-success btn-sm px-3 fw-bold shadow-sm">
+                        <i class="bi bi-plus-circle me-1"></i> New Session
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <form method="GET" action="{{ url_for('faculty.attendance_history') }}" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted">Filter by Class</label>
+                    <select class="form-select form-select-sm" name="class_id">
+                        <option value="">All Assigned Classes</option>
+                        {% for cls in assigned_classes %}
+                            <option value="{{ cls.id }}" {% if filter_class_id == cls.id %}selected{% endif %}>
+                                {{ cls.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted">Filter by Subject</label>
+                    <select class="form-select form-select-sm" name="subject_id">
+                        <option value="">All Assigned Subjects</option>
+                        {% for sub in assigned_subjects %}
+                            <option value="{{ sub.id }}" {% if filter_subject_id == sub.id %}selected{% endif %}>
+                                {{ sub.code }} - {{ sub.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold text-muted">From Date</label>
+                    <input type="date" class="form-control form-control-sm" name="date_from" value="{{ filter_date_from }}">
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold text-muted">To Date</label>
+                    <input type="date" class="form-control form-control-sm" name="date_to" value="{{ filter_date_to }}">
+                </div>
+
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm flex-grow-1 fw-semibold">
+                        <i class="bi bi-funnel me-1"></i> Filter
+                    </button>
+                    <a href="{{ url_for('faculty.attendance_history') }}" class="btn btn-outline-secondary btn-sm" title="Reset Filters">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sessions Table Card -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-dark mb-0">Conducted Sessions ({{ sessions|length }})</h5>
+            </div>
+
+            {% if sessions %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>Date</th>
+                                <th>Period / Slot</th>
+                                <th>Class</th>
+                                <th>Subject</th>
+                                <th class="text-center">Total Enrolled</th>
+                                <th class="text-center">Present</th>
+                                <th class="text-center">Absent</th>
+                                <th class="text-center">Turnout Rate</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="small">
+                            {% for s in sessions %}
+                                <tr>
+                                    <td class="fw-bold text-dark">{{ s.session_date.strftime('%d %b %Y') }}</td>
+                                    <td><span class="badge bg-light text-dark border">{{ s.session_slot }}</span></td>
+                                    <td><span class="fw-semibold text-success">{{ s.class_group.name }}</span></td>
+                                    <td>
+                                        <span class="fw-semibold text-primary">{{ s.subject.code }}</span>
+                                        <span class="text-muted small d-block" style="font-size: 0.75rem;">{{ s.subject.name }}</span>
+                                    </td>
+                                    <td class="text-center fw-semibold">{{ s.total_students }}</td>
+                                    <td class="text-center text-success fw-bold">{{ s.present_count }}</td>
+                                    <td class="text-center text-danger fw-bold">{{ s.absent_count }}</td>
+                                    <td class="text-center">
+                                        <span class="badge {% if s.attendance_rate >= 75.0 %}bg-success-subtle text-success border border-success-subtle{% else %}bg-danger-subtle text-danger border border-danger-subtle{% endif %} px-2 py-1">
+                                            {{ s.attendance_rate }}%
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#viewModal{{ s.id }}" title="View Session Roster">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <a href="{{ url_for('faculty.edit_attendance', session_id=s.id) }}" class="btn btn-outline-primary" title="Edit Session Records">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- View Session Modal -->
+                                <div class="modal fade" id="viewModal{{ s.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered modal-lg">
+                                        <div class="modal-content border-0 shadow rounded-4">
+                                            <div class="modal-header border-0 pb-0">
+                                                <div>
+                                                    <h5 class="modal-title fw-bold text-dark">
+                                                        Attendance Details &bull; {{ s.session_date.strftime('%d %b %Y') }}
+                                                    </h5>
+                                                    <p class="text-muted small mb-0">
+                                                        {{ s.class_group.name }} &bull; {{ s.subject.code }} ({{ s.subject.name }}) &bull; {{ s.session_slot }}
+                                                    </p>
+                                                </div>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body p-4">
+                                                <div class="row g-2 mb-3 text-center">
+                                                    <div class="col-4">
+                                                        <div class="p-2 rounded bg-light">
+                                                            <div class="small text-muted">Total</div>
+                                                            <div class="fw-bold">{{ s.total_students }}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-4">
+                                                        <div class="p-2 rounded bg-success-subtle text-success">
+                                                            <div class="small">Present</div>
+                                                            <div class="fw-bold">{{ s.present_count }}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-4">
+                                                        <div class="p-2 rounded bg-danger-subtle text-danger">
+                                                            <div class="small">Absent</div>
+                                                            <div class="fw-bold">{{ s.absent_count }}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="table-responsive" style="max-height: 350px;">
+                                                    <table class="table table-sm table-striped align-middle mb-0">
+                                                        <thead class="table-light small sticky-top">
+                                                            <tr>
+                                                                <th>Roll No</th>
+                                                                <th>Student Name</th>
+                                                                <th>Status</th>
+                                                                <th>Remarks</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody class="small">
+                                                            {% for rec in s.records %}
+                                                                <tr>
+                                                                    <td class="fw-semibold">{{ rec.student.roll_number }}</td>
+                                                                    <td>{{ rec.student.full_name }}</td>
+                                                                    <td>
+                                                                        <span class="badge {% if rec.status == 'PRESENT' %}bg-success{% else %}bg-danger{% endif %}">
+                                                                            {{ rec.status }}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td class="text-muted">{{ rec.remarks or '-' }}</td>
+                                                                </tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer border-0 pt-0">
+                                                <a href="{{ url_for('faculty.edit_attendance', session_id=s.id) }}" class="btn btn-primary btn-sm fw-semibold">
+                                                    <i class="bi bi-pencil-square me-1"></i> Edit This Session
+                                                </a>
+                                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-calendar-x text-muted fs-1 mb-2"></i>
+                    <h6 class="fw-bold text-dark">No Attendance Sessions Found</h6>
+                    <p class="text-muted small mb-3">No recorded sessions match your selected filter criteria.</p>
+                    <a href="{{ url_for('faculty.mark_attendance') }}" class="btn btn-success btn-sm fw-semibold">
+                        <i class="bi bi-calendar-plus me-1"></i> Record New Attendance
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

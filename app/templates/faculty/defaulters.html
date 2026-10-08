@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block title %}Attendance Defaulters List{% endblock %}
+
+{% block content %}
+<!-- Tabbed Secondary Navigation -->
+{% include 'faculty/nav.html' %}
+
+<div class="row g-4">
+    <!-- Header Card -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1 rounded-pill">
+                            Eligibility Cutoff: {{ threshold }}%
+                        </span>
+                        <h4 class="fw-bold text-dark mb-0">Attendance Defaulters Tracking</h4>
+                    </div>
+                    <p class="text-muted small mb-0">
+                        Students enrolled in your assigned classes whose attendance falls below the institutional minimum threshold of <strong>{{ threshold }}%</strong>.
+                    </p>
+                </div>
+                <div>
+                    <span class="badge bg-danger fs-6 px-3 py-2 rounded-pill shadow-sm">
+                        {{ defaulters|length }} Defaulters Detected
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Card -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <form method="GET" action="{{ url_for('faculty.attendance_defaulters') }}" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold text-muted">Filter by Class</label>
+                    <select class="form-select form-select-sm" name="class_id">
+                        <option value="">All Assigned Classes</option>
+                        {% for cls in assigned_classes %}
+                            <option value="{{ cls.id }}" {% if filter_class_id == cls.id %}selected{% endif %}>
+                                {{ cls.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold text-muted">Filter by Subject</label>
+                    <select class="form-select form-select-sm" name="subject_id">
+                        <option value="">All Assigned Subjects</option>
+                        {% for sub in assigned_subjects %}
+                            <option value="{{ sub.id }}" {% if filter_subject_id == sub.id %}selected{% endif %}>
+                                {{ sub.code }} - {{ sub.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold text-muted">Custom Threshold (%)</label>
+                    <input type="number" step="0.1" min="1" max="100" class="form-control form-control-sm" name="threshold" value="{{ threshold }}">
+                </div>
+
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-danger btn-sm flex-grow-1 fw-semibold">
+                        <i class="bi bi-funnel me-1"></i> Apply
+                    </button>
+                    <a href="{{ url_for('faculty.attendance_defaulters') }}" class="btn btn-outline-secondary btn-sm" title="Reset">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Defaulters Table Card -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-dark mb-0">Identified Defaulters ({{ defaulters|length }})</h5>
+            </div>
+
+            {% if defaulters %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th style="width: 50px;">#</th>
+                                <th>Roll Number</th>
+                                <th>Student Full Name</th>
+                                <th>Class</th>
+                                <th>Subject</th>
+                                <th class="text-center">Attended / Total</th>
+                                <th class="text-center">Current Rate</th>
+                                <th class="text-center">Shortage</th>
+                            </tr>
+                        </thead>
+                        <tbody class="small">
+                            {% for d in defaulters %}
+                                <tr>
+                                    <td class="text-muted small">{{ loop.index }}</td>
+                                    <td class="fw-bold text-dark">{{ d.student.roll_number }}</td>
+                                    <td>
+                                        <div class="fw-semibold">{{ d.student.full_name }}</div>
+                                        <div class="text-muted small" style="font-size: 0.75rem;">ID: {{ d.student.user.username }}</div>
+                                    </td>
+                                    <td><span class="fw-semibold text-success">{{ d.class.name }}</span></td>
+                                    <td>
+                                        <span class="fw-semibold text-primary">{{ d.subject.code }}</span>
+                                        <span class="text-muted small d-block" style="font-size: 0.75rem;">{{ d.subject.name }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="text-success fw-bold">{{ d.attended }}</span> / 
+                                        <span class="text-dark">{{ d.total }}</span> sessions
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 fw-bold">
+                                            {{ d.percentage }}%
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-danger text-white px-2 py-1">
+                                            -{{ d.shortage }}%
+                                        </span>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <div class="rounded-circle bg-success-subtle text-success d-inline-flex p-3 mb-3">
+                        <i class="bi bi-shield-check fs-1"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark">No Attendance Defaulters!</h6>
+                    <p class="text-muted small mb-0">
+                        All enrolled students in your assigned courses currently maintain attendance at or above {{ threshold }}%.
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

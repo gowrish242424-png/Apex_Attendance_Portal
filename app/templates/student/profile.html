@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block title %}My Academic Profile{% endblock %}
+
+{% block content %}
+<!-- Tabbed Secondary Navigation -->
+{% include 'student/nav.html' %}
+
+<div class="row g-4 justify-content-center">
+    <!-- Header Card -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-primary bg-opacity-10 p-3 text-primary">
+                        <i class="bi bi-person-badge-fill fs-2"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold text-dark mb-1">{{ profile.full_name }}</h4>
+                        <p class="text-muted small mb-0">
+                            Roll No: <strong>{{ profile.roll_number }}</strong> &bull; 
+                            Class: <strong>{{ profile.enrolled_class.name if profile.enrolled_class else 'N/A' }}</strong> &bull; 
+                            Department: <strong>{{ profile.department.name if profile.department else 'N/A' }}</strong>
+                        </p>
+                    </div>
+                </div>
+                <div>
+                    <span class="badge {% if user.is_active %}bg-success{% else %}bg-danger{% endif %} px-3 py-2 rounded-pill">
+                        Account {{ 'Active' if user.is_active else 'Suspended' }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Academic Details Card -->
+    <div class="col-md-7">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+            <h5 class="fw-bold text-dark mb-3"><i class="bi bi-mortarboard text-primary me-2"></i>Academic Record</h5>
+            <div class="list-group list-group-flush small">
+                <div class="list-group-item d-flex justify-content-between px-0 py-2">
+                    <span class="text-muted">Full Name</span>
+                    <span class="fw-bold text-dark">{{ profile.full_name }}</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between px-0 py-2">
+                    <span class="text-muted">Roll Number</span>
+                    <span class="fw-bold text-primary">{{ profile.roll_number }}</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between px-0 py-2">
+                    <span class="text-muted">Portal Username</span>
+                    <span class="fw-semibold text-dark">{{ user.username }}</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between px-0 py-2">
+                    <span class="text-muted">Registered Email</span>
+                    <span class="fw-semibold text-dark">{{ user.email }}</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between px-0 py-2">
+                    <span class="text-muted">Academic Department</span>
+                    <span class="fw-semibold text-dark">{{ profile.department.name }} ({{ profile.department.code }})</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between px-0 py-2">
+                    <span class="text-muted">Enrolled Class Cohort</span>
+                    <span class="fw-semibold text-success">{{ profile.enrolled_class.name }}</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between px-0 py-2">
+                    <span class="text-muted">Academic Year</span>
+                    <span class="fw-semibold text-dark">{{ profile.enrolled_class.academic_year if profile.enrolled_class else 'N/A' }}</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between px-0 py-2">
+                    <span class="text-muted">Current Semester</span>
+                    <span class="fw-semibold text-dark">Semester {{ profile.semester }}</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between px-0 py-2">
+                    <span class="text-muted">Contact Phone</span>
+                    <span class="fw-semibold text-dark">{{ profile.phone or 'Not provided' }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Standing Summary Card -->
+    <div class="col-md-5">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+            <h5 class="fw-bold text-dark mb-3"><i class="bi bi-shield-check text-success me-2"></i>Institutional Standing</h5>
+
+            <div class="card bg-light border-0 rounded-3 p-3 text-center mb-3">
+                <span class="text-muted small">Overall Attendance Status</span>
+                <h2 class="fw-bold {% if overall.is_eligible %}text-success{% else %}text-danger{% endif %} mb-0 mt-1">
+                    {{ overall.percentage }}%
+                </h2>
+                <div class="mt-2">
+                    <span class="badge {% if overall.is_eligible %}bg-success{% else %}bg-danger{% endif %} px-3 py-1">
+                        {{ overall.status }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="list-group list-group-flush small mb-3">
+                <div class="list-group-item d-flex justify-content-between px-0 py-2">
+                    <span class="text-muted">Total Conducted Sessions</span>
+                    <span class="fw-bold text-dark">{{ overall.total }}</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between px-0 py-2">
+                    <span class="text-muted">Sessions Attended</span>
+                    <span class="fw-bold text-success">{{ overall.attended }}</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between px-0 py-2">
+                    <span class="text-muted">Sessions Missed</span>
+                    <span class="fw-bold text-danger">{{ overall.absent }}</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between px-0 py-2">
+                    <span class="text-muted">Minimum Required</span>
+                    <span class="fw-bold text-dark">{{ overall.threshold }}%</span>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2">
+                <a href="{{ url_for('student.subject_attendance') }}" class="btn btn-outline-primary btn-sm fw-semibold">
+                    <i class="bi bi-book me-1"></i> Subject Attendance Breakdown
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,271 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Dashboard{% endblock %}
+
+{% block content %}
+<!-- Tabbed Secondary Navigation -->
+{% include 'student/nav.html' %}
+
+<div class="row g-4">
+    <!-- Header Banner -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 text-white p-4" style="background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-white bg-opacity-10 p-3">
+                        <i class="bi bi-mortarboard-fill fs-2 text-warning"></i>
+                    </div>
+                    <div>
+                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-1 rounded-pill mb-1">
+                            Student Role
+                        </span>
+                        <h3 class="fw-bold mb-0">{{ profile.full_name if profile else user.username }}</h3>
+                        <p class="small text-white-50 mb-0">
+                            Roll No: <strong class="text-white">{{ profile.roll_number if profile else 'N/A' }}</strong> &bull;
+                            Class: <strong class="text-white">{{ profile.enrolled_class.name if profile and profile.enrolled_class else 'N/A' }}</strong> &bull;
+                            Department: <strong class="text-white">{{ profile.department.name if profile and profile.department else 'N/A' }}</strong> &bull;
+                            Academic Year: <strong class="text-white">{{ profile.enrolled_class.academic_year if profile and profile.enrolled_class else 'N/A' }}</strong>
+                        </p>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('student.what_if') }}" class="btn btn-warning btn-sm px-3 fw-bold text-dark shadow-sm">
+                        <i class="bi bi-calculator me-1"></i> What-If Calculator
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Telemetry Cards -->
+    <div class="col-md-3 col-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="text-muted small text-uppercase fw-semibold">Overall Attendance</span>
+                <span class="badge {% if overall.is_eligible %}bg-success-subtle text-success{% elif overall.total > 0 %}bg-danger-subtle text-danger{% else %}bg-secondary-subtle text-secondary{% endif %}">
+                    {{ overall.status }}
+                </span>
+            </div>
+            <h3 class="fw-bold {% if overall.is_eligible %}text-success{% elif overall.total > 0 %}text-danger{% else %}text-muted{% endif %} mb-0 mt-1">
+                {{ overall.percentage }}%
+            </h3>
+            <div class="text-muted small mt-1">Institutional Cutoff: {{ overall.threshold }}%</div>
+        </div>
+    </div>
+
+    <div class="col-md-3 col-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="text-muted small text-uppercase fw-semibold">Total Classes</span>
+                <i class="bi bi-calendar2-range text-primary fs-5"></i>
+            </div>
+            <h3 class="fw-bold text-dark mb-0 mt-1">{{ overall.total }}</h3>
+            <div class="text-muted small mt-1">Sessions Conducted</div>
+        </div>
+    </div>
+
+    <div class="col-md-3 col-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="text-muted small text-uppercase fw-semibold">Classes Attended</span>
+                <i class="bi bi-person-check text-success fs-5"></i>
+            </div>
+            <h3 class="fw-bold text-success mb-0 mt-1">{{ overall.attended }}</h3>
+            <div class="text-muted small mt-1">Marked Present</div>
+        </div>
+    </div>
+
+    <div class="col-md-3 col-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="text-muted small text-uppercase fw-semibold">Classes Missed</span>
+                <i class="bi bi-person-x text-danger fs-5"></i>
+            </div>
+            <h3 class="fw-bold text-danger mb-0 mt-1">{{ overall.absent }}</h3>
+            <div class="text-muted small mt-1">Marked Absent</div>
+        </div>
+    </div>
+
+    <!-- Subject Status Overview Banner -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
+            <div class="row g-2 text-center align-items-center">
+                <div class="col-md-4 col-12">
+                    <span class="text-muted small">Total Subjects Enrolled</span>
+                    <h5 class="fw-bold text-dark mb-0">{{ subjects_data.total_subjects }}</h5>
+                </div>
+                <div class="col-md-4 col-6">
+                    <span class="text-muted small">Above Cutoff (&ge; {{ subjects_data.threshold }}%)</span>
+                    <h5 class="fw-bold text-success mb-0">
+                        <i class="bi bi-check-circle-fill me-1"></i>{{ subjects_data.safe_count }}
+                    </h5>
+                </div>
+                <div class="col-md-4 col-6">
+                    <span class="text-muted small">In Shortage (&lt; {{ subjects_data.threshold }}%)</span>
+                    <h5 class="fw-bold {% if subjects_data.shortage_count > 0 %}text-danger{% else %}text-muted{% endif %} mb-0">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ subjects_data.shortage_count }}
+                    </h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shortage Warning Alert (if applicable) -->
+    {% if subjects_data.shortage_count > 0 %}
+    <div class="col-12">
+        <div class="alert alert-danger border-0 shadow-sm rounded-4 p-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-danger bg-opacity-25 p-3 text-danger">
+                    <i class="bi bi-exclamation-diamond-fill fs-3"></i>
+                </div>
+                <div>
+                    <h5 class="fw-bold mb-1 text-dark">Attendance Shortage Detected</h5>
+                    <p class="mb-0 text-secondary small">
+                        You have <strong>{{ subjects_data.shortage_count }}</strong> subject(s) below the institutional threshold of <strong>{{ subjects_data.threshold }}%</strong>.
+                        Use the What-If Calculator to plan your attendance recovery.
+                    </p>
+                </div>
+            </div>
+            <div>
+                <a href="{{ url_for('student.what_if') }}" class="btn btn-danger fw-bold px-3 shadow-sm">
+                    <i class="bi bi-calculator me-1"></i> Simulate Recovery
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Quick Action Launchers -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <h5 class="fw-bold text-dark mb-3"><i class="bi bi-lightning-charge-fill text-warning me-2"></i>Quick Actions</h5>
+            <div class="row g-3">
+                <div class="col-md-3 col-sm-6">
+                    <a href="{{ url_for('student.subject_attendance') }}" class="card card-hover border border-primary-subtle bg-primary-subtle text-decoration-none p-3 rounded-3 text-center h-100">
+                        <i class="bi bi-book fs-2 text-primary mb-2"></i>
+                        <h6 class="fw-bold text-primary mb-1">My Attendance</h6>
+                        <span class="small text-muted">Subject-by-subject percentage</span>
+                    </a>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <a href="{{ url_for('student.attendance_history') }}" class="card card-hover border border-info-subtle bg-info-subtle text-decoration-none p-3 rounded-3 text-center h-100">
+                        <i class="bi bi-clock-history fs-2 text-info mb-2"></i>
+                        <h6 class="fw-bold text-info mb-1">Attendance History</h6>
+                        <span class="small text-muted">Chronological roll call audit log</span>
+                    </a>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <a href="{{ url_for('student.what_if') }}" class="card card-hover border border-success-subtle bg-success-subtle text-decoration-none p-3 rounded-3 text-center h-100">
+                        <i class="bi bi-calculator fs-2 text-success mb-2"></i>
+                        <h6 class="fw-bold text-success mb-1">What-If Calculator</h6>
+                        <span class="small text-muted">Simulate target attendance</span>
+                    </a>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <a href="{{ url_for('student.profile') }}" class="card card-hover border border-secondary-subtle bg-light text-decoration-none p-3 rounded-3 text-center h-100">
+                        <i class="bi bi-person-badge fs-2 text-secondary mb-2"></i>
+                        <h6 class="fw-bold text-dark mb-1">Academic Profile</h6>
+                        <span class="small text-muted">Roll number &amp; registration data</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subject Attendance Breakdown Cards -->
+    <div class="col-md-7">
+        <div class="card border-0 shadow-sm rounded-4 h-100 p-4 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-dark mb-0"><i class="bi bi-journal-text text-primary me-2"></i>Subject Attendance Breakdown</h5>
+                <a href="{{ url_for('student.subject_attendance') }}" class="btn btn-link btn-sm text-decoration-none text-primary p-0">View All</a>
+            </div>
+            {% if subjects_data.subjects %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>Subject</th>
+                                <th class="text-center">Attended / Total</th>
+                                <th style="width: 140px;">Rate</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="small">
+                            {% for s in subjects_data.subjects %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-primary">{{ s.subject.code }}</div>
+                                        <div class="text-muted" style="font-size: 0.75rem;">{{ s.subject.name }}</div>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if s.total > 0 %}
+                                            <span class="text-success fw-bold">{{ s.attended }}</span> / 
+                                            <span class="text-dark">{{ s.total }}</span>
+                                        {% else %}
+                                            <span class="text-muted">0 / 0</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if s.total > 0 %}
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="progress flex-grow-1" style="height: 6px;">
+                                                    <div class="progress-bar {% if not s.is_shortage %}bg-success{% else %}bg-danger{% endif %}" 
+                                                         role="progressbar" style="width: {{ s.percentage }}%;"></div>
+                                                </div>
+                                                <span class="fw-bold small {% if not s.is_shortage %}text-success{% else %}text-danger{% endif %}">
+                                                    {{ s.percentage }}%
+                                                </span>
+                                            </div>
+                                        {% else %}
+                                            <span class="badge bg-secondary-subtle text-secondary">Not Started</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{{ url_for('student.subject_details', subject_id=s.subject.id) }}" 
+                                           class="btn btn-outline-primary btn-sm py-0 px-2 fw-semibold">
+                                            Details
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted small mb-0">No subjects currently assigned to your class.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Recent Attendance Records Log -->
+    <div class="col-md-5">
+        <div class="card border-0 shadow-sm rounded-4 h-100 p-4 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-dark mb-0"><i class="bi bi-clock-history text-info me-2"></i>Recent Attendance</h5>
+                <a href="{{ url_for('student.attendance_history') }}" class="btn btn-link btn-sm text-decoration-none text-primary p-0">Full History</a>
+            </div>
+            {% if recent_records %}
+                <div class="list-group list-group-flush small">
+                    {% for rec in recent_records %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                            <div>
+                                <div class="fw-bold text-dark">{{ rec.session.subject.code }} &bull; {{ rec.session.subject.name }}</div>
+                                <div class="text-muted" style="font-size: 0.75rem;">
+                                    {{ rec.session.session_date.strftime('%d %b %Y') }} &bull; {{ rec.session.session_slot }}
+                                </div>
+                            </div>
+                            <div>
+                                <span class="badge {% if rec.status == 'PRESENT' %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ rec.status }}
+                                </span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted small mb-0">No attendance records recorded yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

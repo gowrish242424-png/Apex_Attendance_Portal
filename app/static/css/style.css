@@ -1,0 +1,48 @@
+/* Modern styling for Advanced Attendance Management System (COP Project) */
+
+:root {
+    --cop-primary: #4f46e5;
+    --cop-primary-dark: #3730a3;
+    --cop-secondary: #0ea5e9;
+    --cop-success: #10b981;
+    --cop-danger: #ef4444;
+    --cop-warning: #f59e0b;
+    --cop-card-bg: #ffffff;
+    --cop-body-bg: #f8fafc;
+}
+
+body {
+    background-color: var(--cop-body-bg);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #1e293b;
+    min-height: 100vh;
+}
+
+.navbar {
+    background: linear-gradient(135deg, var(--cop-primary) 0%, var(--cop-primary-dark) 100%) !important;
+}
+
+.card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.card:hover {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04) !important;
+}
+
+.badge {
+    letter-spacing: 0.02em;
+    font-weight: 500;
+}
+
+pre {
+    background-color: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 0.5rem;
+    padding: 1rem;
+}
+
+.footer {
+    border-top: 1px solid #e2e8f0;
+}

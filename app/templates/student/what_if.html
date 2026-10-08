@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+
+{% block title %}What-If Attendance Calculator{% endblock %}
+
+{% block content %}
+<!-- Tabbed Secondary Navigation -->
+{% include 'student/nav.html' %}
+
+<div class="row g-4">
+    <!-- Header Card -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="badge bg-warning-subtle text-dark border border-warning-subtle px-3 py-1 rounded-pill">
+                            <i class="bi bi-cpu me-1"></i>Simulation Engine
+                        </span>
+                        <h4 class="fw-bold text-dark mb-0">"What-If" Attendance Calculator</h4>
+                    </div>
+                    <p class="text-muted small mb-0">
+                        Forecast how upcoming classes will affect your attendance rate and plan your target recovery.
+                    </p>
+                </div>
+                <div>
+                    <span class="badge bg-secondary-subtle text-secondary px-3 py-2 rounded-pill small">
+                        <i class="bi bi-shield-lock me-1"></i>Simulation Only &bull; Database Unaltered
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simulator Input Form -->
+    <div class="col-md-5">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+            <h5 class="fw-bold text-dark mb-3"><i class="bi bi-sliders text-primary me-2"></i>Simulation Parameters</h5>
+            <form method="POST" action="{{ url_for('student.what_if') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold text-muted">Select Curriculum Subject <span class="text-danger">*</span></label>
+                    <select class="form-select" name="subject_id" required>
+                        <option value="">-- Choose Subject --</option>
+                        {% for sub in applicable_subjects %}
+                            <option value="{{ sub.id }}" {% if selected_subject_id == sub.id %}selected{% endif %}>
+                                {{ sub.code }} - {{ sub.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold text-muted">Number of Upcoming Classes <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control" name="upcoming_classes" value="{{ upcoming_classes }}" min="0" max="500" required>
+                    <div class="form-text small text-muted">Enter how many future class sessions you want to project (0 to 500).</div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow-sm">
+                    <i class="bi bi-calculator me-1"></i> Calculate Projection
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Simulation Results Display -->
+    <div class="col-md-7">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+            <h5 class="fw-bold text-dark mb-3"><i class="bi bi-graph-up text-success me-2"></i>Forecast Projection</h5>
+
+            {% if result %}
+                <!-- Current Baseline Banner -->
+                <div class="card bg-light border-0 rounded-3 p-3 mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-bold text-dark">{{ result.subject.code }} &bull; {{ result.subject.name }}</span>
+                        <span class="badge {% if result.current_percentage >= result.threshold %}bg-success{% else %}bg-danger{% endif %} px-2 py-1">
+                            Current: {{ result.current_percentage }}%
+                        </span>
+                    </div>
+                    <div class="small text-muted">
+                        Present: <strong>{{ result.current_present }}</strong> / Total: <strong>{{ result.current_total }}</strong> classes &bull;
+                        Required Cutoff: <strong>{{ result.threshold }}%</strong>
+                    </div>
+                </div>
+
+                <!-- Three Projections Cards -->
+                <div class="row g-3 mb-4">
+                    <!-- Scenario A: Attend All -->
+                    <div class="col-sm-6">
+                        <div class="border rounded-3 p-3 bg-success-subtle border-success-subtle h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold text-success small text-uppercase">Attend All Upcoming</span>
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                            </div>
+                            <h3 class="fw-bold text-success mb-1">{{ result.attend_all_percentage }}%</h3>
+                            <div class="small text-muted">
+                                If you attend all {{ result.upcoming_classes }} classes ({{ result.attend_all_present }}/{{ result.new_total }})
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scenario B: Miss All -->
+                    <div class="col-sm-6">
+                        <div class="border rounded-3 p-3 bg-danger-subtle border-danger-subtle h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold text-danger small text-uppercase">Miss All Upcoming</span>
+                                <i class="bi bi-x-circle-fill text-danger"></i>
+                            </div>
+                            <h3 class="fw-bold text-danger mb-1">{{ result.miss_all_percentage }}%</h3>
+                            <div class="small text-muted">
+                                If you miss all {{ result.upcoming_classes }} classes ({{ result.miss_all_present }}/{{ result.new_total }})
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Explanation & Recommendation Alert -->
+                <div class="alert {% if result.is_possible and result.needed_from_upcoming == 0 %}alert-success{% elif result.is_possible %}alert-info{% else %}alert-warning{% endif %} border-0 rounded-3 p-3 mb-3">
+                    <div class="d-flex align-items-start gap-2">
+                        <i class="bi {% if result.is_possible and result.needed_from_upcoming == 0 %}bi-check-circle-fill text-success{% elif result.is_possible %}bi-info-circle-fill text-info{% else %}bi-exclamation-triangle-fill text-warning{% endif %} fs-5 mt-1"></i>
+                        <div>
+                            <h6 class="fw-bold mb-1">Target Assessment</h6>
+                            <p class="small mb-0">{{ result.explanation }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Continuous Classes Tip -->
+                {% if result.continuous_needed > 0 %}
+                    <div class="p-3 border rounded-3 bg-light small text-muted">
+                        <i class="bi bi-lightbulb-fill text-warning me-1"></i>
+                        <strong>Recovery Insight:</strong> To reach the <strong>{{ result.threshold }}%</strong> threshold from today, you must attend the next <strong>{{ result.continuous_needed }} classes continuously</strong> without missing.
+                    </div>
+                {% endif %}
+
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-calculator text-muted display-4 mb-3"></i>
+                    <h6 class="fw-bold text-dark">Ready to Simulate</h6>
+                    <p class="text-muted small mx-auto" style="max-width: 380px;">
+                        Select a curriculum subject and the number of upcoming classes on the left to project your future attendance percentage.
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

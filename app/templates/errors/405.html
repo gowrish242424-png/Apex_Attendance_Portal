@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}405 Method Not Allowed{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-5">
+    <div class="col-md-7 col-lg-5 text-center">
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+            <div class="mb-3">
+                <div class="d-inline-flex p-4 rounded-circle bg-danger-subtle text-danger mb-2">
+                    <i class="bi bi-sign-stop display-3"></i>
+                </div>
+            </div>
+            <h1 class="display-6 fw-bold text-dark mb-2">405 Method Not Allowed</h1>
+            <h5 class="text-danger fw-semibold mb-3">HTTP Action Prohibited</h5>
+            <p class="text-muted small mb-4">
+                The requested HTTP method is not supported for this endpoint. State-changing requests must be submitted through standard application forms.
+            </p>
+            <div class="d-flex justify-content-center gap-2">
+                {% if current_user.is_authenticated %}
+                    {% if current_user.is_admin %}
+                        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-primary px-4 fw-semibold">
+                            <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                        </a>
+                    {% elif current_user.is_faculty %}
+                        <a href="{{ url_for('faculty.dashboard') }}" class="btn btn-success px-4 fw-semibold">
+                            <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                        </a>
+                    {% elif current_user.is_student %}
+                        <a href="{{ url_for('student.dashboard') }}" class="btn btn-primary px-4 fw-semibold">
+                            <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                        </a>
+                    {% endif %}
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary px-4 fw-semibold">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Sign In
+                    </a>
+                {% endif %}
+                <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary px-3">
+                    <i class="bi bi-house me-1"></i> Home
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

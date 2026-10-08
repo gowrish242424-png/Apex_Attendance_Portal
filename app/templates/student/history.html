@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block title %}My Attendance History{% endblock %}
+
+{% block content %}
+<!-- Tabbed Secondary Navigation -->
+{% include 'student/nav.html' %}
+
+<div class="row g-4">
+    <!-- Header Card -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <h4 class="fw-bold text-dark mb-1">
+                        <i class="bi bi-clock-history text-info me-2"></i>My Attendance History
+                    </h4>
+                    <p class="text-muted small mb-0">Chronological audit log of all class attendance sessions recorded for your account.</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('student.export_attendance_csv', subject_id=filter_subject_id or '', status=filter_status or '', date_from=filter_date_from or '', date_to=filter_date_to or '') }}" class="btn btn-outline-success btn-sm fw-semibold shadow-sm">
+                        <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export Attendance CSV
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Card -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <form method="GET" action="{{ url_for('student.attendance_history') }}" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted">Filter by Subject</label>
+                    <select class="form-select form-select-sm" name="subject_id">
+                        <option value="">All Curriculum Subjects</option>
+                        {% for sub in applicable_subjects %}
+                            <option value="{{ sub.id }}" {% if filter_subject_id == sub.id %}selected{% endif %}>
+                                {{ sub.code }} - {{ sub.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted">Attendance Status</label>
+                    <select class="form-select form-select-sm" name="status">
+                        <option value="">All Statuses</option>
+                        <option value="PRESENT" {% if filter_status == 'PRESENT' %}selected{% endif %}>Present Only</option>
+                        <option value="ABSENT" {% if filter_status == 'ABSENT' %}selected{% endif %}>Absent Only</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold text-muted">Date From</label>
+                    <input type="date" class="form-control form-control-sm" name="date_from" value="{{ filter_date_from }}">
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold text-muted">Date To</label>
+                    <input type="date" class="form-control form-control-sm" name="date_to" value="{{ filter_date_to }}">
+                </div>
+
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm flex-grow-1 fw-semibold">
+                        <i class="bi bi-funnel me-1"></i> Filter
+                    </button>
+                    <a href="{{ url_for('student.attendance_history') }}" class="btn btn-outline-secondary btn-sm" title="Reset Filters">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- History Table Card -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-dark mb-0">Attendance Records Log ({{ records|length }})</h5>
+            </div>
+
+            {% if records %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th style="width: 50px;">#</th>
+                                <th>Date</th>
+                                <th>Period / Slot</th>
+                                <th>Subject Code &amp; Name</th>
+                                <th>Class Cohort</th>
+                                <th class="text-center" style="width: 140px;">Status</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody class="small">
+                            {% for rec in records %}
+                                <tr>
+                                    <td class="text-muted">{{ loop.index }}</td>
+                                    <td class="fw-bold text-dark">{{ rec.session.session_date.strftime('%d %b %Y') }}</td>
+                                    <td><span class="badge bg-light text-dark border">{{ rec.session.session_slot }}</span></td>
+                                    <td>
+                                        <span class="fw-bold text-primary">{{ rec.session.subject.code }}</span>
+                                        <span class="text-muted small d-block" style="font-size: 0.75rem;">{{ rec.session.subject.name }}</span>
+                                    </td>
+                                    <td><span class="fw-semibold text-success">{{ rec.session.class_group.name }}</span></td>
+                                    <td class="text-center">
+                                        <span class="badge {% if rec.status == 'PRESENT' %}bg-success{% else %}bg-danger{% endif %} px-3 py-1 fw-bold">
+                                            {{ rec.status }}
+                                        </span>
+                                    </td>
+                                    <td class="text-muted">{{ rec.remarks or '-' }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-clock-history text-muted fs-1 mb-2"></i>
+                    <h6 class="fw-bold text-dark">No Attendance Records Match Filters</h6>
+                    <p class="text-muted small mb-0">Try clearing or adjusting your filter criteria to view your attendance history.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

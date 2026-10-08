@@ -1,0 +1,37 @@
+<!-- Student Secondary Navigation Pill Bar -->
+<div class="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+    <div class="card-body p-2">
+        <ul class="nav nav-pills nav-fill gap-1">
+            <li class="nav-item">
+                <a class="nav-link py-2 px-3 fw-semibold {% if request.endpoint == 'student.dashboard' %}active bg-primary text-white shadow-sm{% else %}text-dark{% endif %}" 
+                   href="{{ url_for('student.dashboard') }}">
+                    <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link py-2 px-3 fw-semibold {% if request.endpoint in ['student.subject_attendance', 'student.subject_details'] %}active bg-primary text-white shadow-sm{% else %}text-dark{% endif %}" 
+                   href="{{ url_for('student.subject_attendance') }}">
+                    <i class="bi bi-book me-1"></i> My Attendance
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link py-2 px-3 fw-semibold {% if request.endpoint == 'student.attendance_history' %}active bg-primary text-white shadow-sm{% else %}text-dark{% endif %}" 
+                   href="{{ url_for('student.attendance_history') }}">
+                    <i class="bi bi-clock-history me-1"></i> Attendance History
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link py-2 px-3 fw-semibold {% if request.endpoint == 'student.what_if' %}active bg-primary text-white shadow-sm{% else %}text-dark{% endif %}" 
+                   href="{{ url_for('student.what_if') }}">
+                    <i class="bi bi-calculator me-1"></i> What-If Calculator
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link py-2 px-3 fw-semibold {% if request.endpoint == 'student.profile' %}active bg-primary text-white shadow-sm{% else %}text-dark{% endif %}" 
+                   href="{{ url_for('student.profile') }}">
+                    <i class="bi bi-person-badge me-1"></i> Profile
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
